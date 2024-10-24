@@ -258,6 +258,9 @@ static NSString* stringFromData(NSData* data) {
 
 - (void)create:(CDVInvokedUrlCommand*)command
 {
+    // Prompt to have the network popup
+    [[NSProcessInfo processInfo] hostName];
+    
     NSDictionary* properties = [command argumentAtIndex:0];
 
     ChromeSocketsUdpSocket *socket = [[ChromeSocketsUdpSocket alloc] initWithId:_nextSocketId++ plugin:self properties:properties];

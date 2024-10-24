@@ -36,6 +36,11 @@ public class ChromeSocketsUdp extends CordovaPlugin {
 
   private static final String LOG_TAG = "ChromeSocketsUdp";
 
+  private static final int errorCodeInterruptedException = -100;
+  private static final int errorCodeIOException = -101;
+  private static final int errorCodeInvalidSocketId = -102;
+  private static final int errorCodeSocketException = -103;
+  private static final int errorCodeUnknownHostException = -104;
   private Map<Integer, UdpSocket> sockets = new ConcurrentHashMap<Integer, UdpSocket>();
   private BlockingQueue<SelectorMessage> selectorMessages =
       new LinkedBlockingQueue<SelectorMessage>();
@@ -105,6 +110,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       error.put("message", message);
       error.put("resultCode", code);
     } catch (JSONException e) {
+      Log.e(LOG_TAG, "Unhandled JSONException");
     }
     return error;
   }
@@ -119,6 +125,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       sockets.put(Integer.valueOf(socket.getSocketId()), socket);
       callbackContext.success(socket.getSocketId());
     } catch (IOException e) {
+      callbackContext.error(buildErrorInfo(errorCodeIOException, e.getMessage()));
     }
   }
 
@@ -131,13 +138,15 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
     try {
       socket.setProperties(properties);
     } catch (SocketException e) {
+      callbackContext.error(buildErrorInfo(errorCodeSocketException, e.getMessage()));
+      return;
     }
 
     callbackContext.success();
@@ -152,7 +161,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -175,8 +184,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
-      callbackContext.error(buildErrorInfo(-4, "Invalid Argument"));
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -184,7 +192,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       socket.bind(address, port);
       addSelectorMessage(socket, SelectorMessageType.SO_BIND, callbackContext);
     } catch (SocketException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeSocketException, e.getMessage()));
     }
   }
 
@@ -199,8 +207,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
-      callbackContext.error(buildErrorInfo(-4, "Invalid Argument"));
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -222,7 +229,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -237,7 +244,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
     callbackContext.success(socket.getInfo());
@@ -263,8 +270,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
-      callbackContext.error(buildErrorInfo(-4, "Invalid Argument"));
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -272,9 +278,9 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       socket.joinGroup(address);
       callbackContext.success();
     } catch (UnknownHostException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeUnknownHostException, e.getMessage()));
     } catch (IOException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeIOException, e.getMessage()));
     }
   }
 
@@ -286,8 +292,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
-      callbackContext.error(buildErrorInfo(-4, "Invalid Argument"));
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -295,9 +300,9 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       socket.leaveGroup(address);
       callbackContext.success();
     } catch (UnknownHostException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeUnknownHostException, e.getMessage()));
     } catch (IOException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeIOException, e.getMessage()));
     }
   }
 
@@ -309,8 +314,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
-      callbackContext.error(buildErrorInfo(-4, "Invalid Argument"));
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -318,7 +322,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       socket.setMulticastTimeToLive(ttl);
       callbackContext.success();
     } catch (IOException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeIOException, e.getMessage()));
     }
   }
 
@@ -330,8 +334,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
-      callbackContext.error(buildErrorInfo(-4, "Invalid Argument"));
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -339,7 +342,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       socket.setBroadcast(enabled);
       callbackContext.success();
     } catch (IOException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeIOException, e.getMessage()));
     }
 
   }
@@ -352,8 +355,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
-      callbackContext.error(buildErrorInfo(-4, "Invalid Argument"));
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
 
@@ -361,7 +363,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       socket.setMulticastLoopbackMode(enabled);
       callbackContext.success();
     } catch (IOException e) {
-      callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+      callbackContext.error(buildErrorInfo(errorCodeIOException, e.getMessage()));
     }
   }
 
@@ -373,7 +375,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     UdpSocket socket = sockets.get(Integer.valueOf(socketId));
 
     if (socket == null) {
-      Log.e(LOG_TAG, "No socket with socketId " + socketId);
+      callbackContext.error(buildErrorInfo(errorCodeInvalidSocketId, "Invalid socketId"));
       return;
     }
     callbackContext.success(new JSONArray(socket.getJoinedGroups()));
@@ -384,16 +386,18 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     startSelectorThread();
   }
 
-  private void sendReceiveErrorEvent(int code, String message) {
+  private void sendReceiveErrorEvent(int socketId, int code, String message) {
     JSONObject error = new JSONObject();
 
     try {
+      error.put("socketId", socketId);
       error.put("message", message);
       error.put("resultCode", code);
       PluginResult errorResult = new PluginResult(Status.ERROR, error);
       errorResult.setKeepCallback(true);
       recvContext.sendPluginResult(errorResult);
     } catch (JSONException e) {
+      Log.e(LOG_TAG, "sendReceiveErrorEvent: JSONException: " + e.getMessage());
     }
   }
 
@@ -418,6 +422,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
 
       recvContext.sendPluginResult(metadataResult);
     } catch (JSONException e) {
+      Log.e(LOG_TAG, "sendReceiveEvent: JSONException: " + e.getMessage());
     }
   }
 
@@ -435,6 +440,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       selectorThread.join();
       selectorThread = null;
     } catch (InterruptedException e) {
+      Log.e(LOG_TAG, "stopSelectorThread: InterruptedException: " + e.getMessage());
     }
   }
 
@@ -446,6 +452,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       if (selector != null)
         selector.wakeup();
     } catch (InterruptedException e) {
+      Log.e(LOG_TAG, "addSelectorMessage: InterrupedException: " + e.getMessage());
     }
   }
 
@@ -516,7 +523,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
         } catch (InterruptedException e) {
         } catch (IOException e) {
           if (msg.callbackContext != null) {
-            msg.callbackContext.error(buildErrorInfo(-2, e.getMessage()));
+            msg.callbackContext.error(buildErrorInfo(errorCodeInterruptedException, e.getMessage()));
           }
         }
       }
@@ -673,7 +680,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
     private void bindMulticastSocket() throws SocketException {
       multicastSocket.bind(new InetSocketAddress(channel.socket().getLocalPort()));
       if (!paused) {
-        multicastReadThread = new MulticastReadThread(multicastSocket);
+        multicastReadThread = new MulticastReadThread(this.socketId, multicastSocket);
         multicastReadThread.start();
       }
     }
@@ -696,7 +703,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
       }
 
       if (multicastSocket != null && multicastReadThread == null) {
-        multicastReadThread = new MulticastReadThread(multicastSocket);
+        multicastReadThread = new MulticastReadThread(this.socketId, multicastSocket);
         multicastReadThread.start();
       }
     }
@@ -846,16 +853,18 @@ public class ChromeSocketsUdp extends CordovaPlugin {
             recvBytes, socketId, address.getAddress().getHostAddress(), address.getPort());
 
       } catch (IOException e) {
-        sendReceiveErrorEvent(-2, e.getMessage());
+        sendReceiveErrorEvent(this.socketId, errorCodeIOException, e.getMessage());
       }
     }
 
     private class MulticastReadThread extends Thread {
 
       private final MulticastSocket socket;
+      private final int socketId;
 
-      MulticastReadThread(MulticastSocket socket) {
+      MulticastReadThread(int socketId, MulticastSocket socket) {
         this.socket = socket;
+        this.socketId = socketId;
       }
 
       public void run() {
@@ -879,7 +888,7 @@ public class ChromeSocketsUdp extends CordovaPlugin {
             }
 
           } catch (IOException e) {
-            sendReceiveErrorEvent(-2, e.getMessage());
+            sendReceiveErrorEvent(this.socketId, errorCodeIOException, e.getMessage());
           }
         }
       }
