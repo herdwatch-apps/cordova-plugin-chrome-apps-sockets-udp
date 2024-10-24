@@ -8,7 +8,7 @@ Beta on Android and iOS.
 
 ## Reference
 
-The API reference is [here](https://developer.chrome.com/apps/sockets_udp).
+The API reference is [here](https://developer.chrome.com/docs/apps/reference/sockets/udp).
 
 # Release Notes
 
